@@ -225,6 +225,13 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.ril.telephony.mqanelements=5
 
 # Ramdisk
+# The Intel hybrid boot image exposes /sbin/recovery during a normal boot.
+# fs_mgr consequently looks for /etc/recovery.fstab instead of
+# /fstab.redhookbay, so provide the same table through /system/etc (/etc is a
+# symlink to /system/etc on the normal rootfs).
+PRODUCT_COPY_FILES += \
+    device/asus/T00F/rootdir/etc/fstab.redhookbay:system/etc/recovery.fstab
+
 PRODUCT_PACKAGES += \
     config_init.sh \
     fstab.redhookbay \
