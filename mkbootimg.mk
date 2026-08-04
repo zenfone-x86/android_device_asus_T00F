@@ -40,6 +40,9 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTIMG) \
 		$(INSTALLED_KERNEL_TARGET) \
 		$(INSTALLED_RAMDISK_TARGET)
 	$(call pretty,"Target boot image: $@")
+	@echo "----- Copying kernel modules to ramdisk ------"${CL_RST}
+	$(hide) mkdir -p $(TARGET_ROOT_OUT)/lib/modules
+	$(hide) cp $(PRODUCT_OUT)/system/vendor/lib/modules/*.ko $(TARGET_ROOT_OUT)/lib/modules/ 2>/dev/null || true
 	@echo "----- Making boot ramdisk ------"${CL_RST}
 	$(MKBOOTFS) $(TARGET_ROOT_OUT) | $(MINIGZIP) > $(INSTALLED_RAMDISK_TARGET)
 	@echo "----- checking cmdline ------"${CL_RST}

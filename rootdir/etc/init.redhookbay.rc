@@ -119,6 +119,10 @@ on boot
    chown media media /sys/kernel/debug/sst/sram_lpe_ia_mailbox
    chown media media /sys/kernel/debug/sst/lpe_stack
 
+    insmod /lib/modules/videobuf-core.ko
+    insmod /lib/modules/videobuf-vmalloc.ko
+    insmod /lib/modules/atomisp-css2300.ko
+
 on post-fs-data
     chown media_rw media_rw /data/media
 
