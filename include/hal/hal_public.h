@@ -34,6 +34,8 @@
 #include <hardware/gralloc.h>
 #include <hardware/hwcomposer.h>
 
+#define GRALLOC_MODULE_GET_DISPLAY_STATUS_IMG 0xf0004
+
 #define ALIGN(x,a)		(((x) + (a) - 1L) & ~((a) - 1L))
 #define HW_ALIGN		32
 #define CAMERA_ALIGN    64
