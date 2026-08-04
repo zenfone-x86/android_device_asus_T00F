@@ -24,6 +24,11 @@ TARGET_KERNEL_CROSS_COMPILE_PREFIX := x86_64-linux-android-
 TARGET_BOARD_PLATFORM := clovertrail
 TARGET_BOOTLOADER_BOARD_NAME := clovertrail
 TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS := true
+
+# Keep the system, vendor, and boot image identities consistent with the
+# stock firmware from which the proprietary components were taken.
+BUILD_FINGERPRINT := asus/WW_a500cg/ASUS_T00F:5.0/LRX21V/WW_user_3.24.40.87_20151222_34:user/release-keys
+
 # Some legacy recoveries return an empty product property.  Keep rejecting
 # known non-T00F devices, but allow installation when recovery reports "".
 TARGET_OTA_ASSERT_DEVICE := T00F,T00F1,T00G,T00J,T00J1,ASUS_T00J,ASUS_T00G,ASUS_T00F,a600cg,a500cg,a501cg,
@@ -207,5 +212,4 @@ WIFI_DRIVER_MODULE_ARG := "iface_name=wlan0 firmware_path=/system/etc/firmware/f
 
 # Use the non-open-source parts
 include vendor/asus/T00F/BoardConfigVendor.mk
-
 
