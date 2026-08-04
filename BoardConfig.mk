@@ -24,7 +24,30 @@ TARGET_KERNEL_CROSS_COMPILE_PREFIX := x86_64-linux-android-
 TARGET_BOARD_PLATFORM := clovertrail
 TARGET_BOOTLOADER_BOARD_NAME := clovertrail
 TARGET_NEEDS_PLATFORM_TEXT_RELOCATIONS := true
-TARGET_OTA_ASSERT_DEVICE := T00F,T00F1,T00G,T00J,T00J1,ASUS_T00J,ASUS_T00G,ASUS_T00F,a600cg,a500cg,a501cg
+# Some legacy recoveries return an empty product property.  Keep rejecting
+# known non-T00F devices, but allow installation when recovery reports "".
+TARGET_OTA_ASSERT_DEVICE := T00F,T00F1,T00G,T00J,T00J1,ASUS_T00J,ASUS_T00G,ASUS_T00F,a600cg,a500cg,a501cg,
+
+# Compatibility shims for proprietary binaries and libraries.
+# Oreo's linker consumes these at build time; LD_SHIM_LIBS exported by init
+# is not parsed by this linker version.
+TARGET_LD_SHIM_LIBS := \
+    /system/bin/mmgr|libshim_mmgr.so \
+    /system/bin/gpsd|libshim_gps.so \
+    /system/lib/hw/gps.redhookbay.so|libshim_gps.so \
+    /system/lib/hw/sensors.vendor.redhookbay.so|libshim_sensors.so \
+    /system/lib/libtcs.so|libshim_tcs.so \
+    /system/lib/libparameter.so|libshim_audio.so \
+    /system/lib/parameter-framework-plugins/Audio/libroute-subsystem.so|libshim_audio.so \
+    /system/lib/parameter-framework-plugins/Audio/libtinyalsa-subsystem.so|libshim_audio.so \
+    /system/lib/libaudience-manager.so|libshim_audio.so \
+    /system/lib/hw/camera.vendor.redhookbay.so|libshim_camera.so \
+    /system/lib/libcamera_client.so|libshim_camera_parameters.so \
+    /system/bin/bd_prov|libstock_crypto.so \
+    /system/bin/customize_service|libstock_crypto.so \
+    /system/lib/libbinder.so|libstock_crypto.so \
+    /system/lib/hw/keystore.vendor.clovertrail.so|libstock_crypto.so \
+    /system/lib/libkeymaster.so|libstock_crypto.so
 
 # Specific headers
 TARGET_BOARD_KERNEL_HEADERS := device/asus/T00F/kernel-headers
