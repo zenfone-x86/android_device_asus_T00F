@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-#include <system/window.h>
-#include <ui/PixelFormat.h>
-#include <ui/Rect.h>
 #include <gui/SurfaceControl.h>
 
-namespace android {
-
-// ---------------------------------------------------------------------------
-
 extern "C" {
-
-    /* status_t SurfaceControl::setLayer */
-    status_t _ZN7android14SurfaceControl8setLayerEj( uint32_t layer);
-
-    status_t _ZN7android14SurfaceControl8setLayerEi( int32_t layer) {
-		return _ZN7android14SurfaceControl8setLayerEj( (uint32_t)layer);
-	}
+    /* Blob expects setLayer(uint32_t) but 8.1 has setLayer(int32_t).
+     * Both are 32-bit and ABI-compatible on x86. */
+    void _ZN7android14SurfaceControl8setLayerEj(uint32_t layer) {}
 }
-
-// ---------------------------------------------------------------------------
-
-}; // namespace android
