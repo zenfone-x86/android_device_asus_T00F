@@ -20,6 +20,7 @@ LOCAL_SRC_FILES := healthd_board_clovertrail.cpp
 LOCAL_MODULE := libhealthd.clovertrail
 LOCAL_C_INCLUDES := system/core/healthd/include
 LOCAL_EXPORT_C_INCLUDE_DIRS := system/core/include
+LOCAL_HEADER_LIBRARIES := libbase_headers
 LOCAL_CFLAGS := -Werror
 include $(BUILD_STATIC_LIBRARY)
 
