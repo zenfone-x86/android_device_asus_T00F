@@ -23,8 +23,6 @@ on init
     chmod 0770 /dev/ug31xx
     chown system system /dev/ug31xx
 
-    export LD_SHIM_LIBS "/system/bin/mmgr|libshim_mmgr.so:/system/bin/gpsd|libshim_gps.so:/system/lib/hw/gps.redhookbay.so|libshim_gps.so:/system/lib/hw/sensors.vendor.redhookbay.so|libshim_sensors.so:/system/lib/libtcs.so|libshim_tcs.so:/system/lib/libparameter.so|libshim_audio.so:/system/lib/parameter-framework-plugins/Audio/libroute-subsystem.so|libshim_audio.so:/system/lib/parameter-framework-plugins/Audio/libtinyalsa-subsystem.so|libshim_audio.so:/system/lib/libaudience-manager.so|libshim_audio.so:/system/lib/hw/camera.vendor.redhookbay.so|libshim_camera.so:/system/lib/libcamera_client.so|libshim_camera_parameters.so:/system/bin/bd_prov|libstock_crypto.so:/system/bin/customize_service|libstock_crypto.so"
-
     write /sys/class/graphics/fbcon/cursor_blink 0
     mkdir /data/system/ 0770 system system
     mkdir /data/misc 01771 system misc
@@ -344,21 +342,6 @@ on property:service.mmgr.smp=1
 on property:service.mmgr.smp=0
     write /proc/irq/36/smp_affinity 1
 
-service audioserver /system/bin/audioserver
-    class main
-    user audioserver
-    # media gid needed for /dev/fm (radio) and for /data/misc/media (tee)
-    group audio camera drmrpc inet media mediadrm net_bt net_bt_admin net_bw_acct system radio wakelock
-    ioprio rt 4
-    writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
-    onrestart restart audio-hal-2-0
-
-service drm /system/bin/drmserver
-    class main
-    user drm
-    group drm system inet drmrpc sdcard_r readproc
-    writepid /dev/cpuset/foreground/tasks
-
 service sensorhubd /system/bin/sensorhubd
     class main
     user system
@@ -368,7 +351,6 @@ service sensorhubd /system/bin/sensorhubd
 on charger
     start upi_ug31xx
     mount ext4 /dev/block/by-name/system /system ro noatime barrier=1,data=ordered
-    mount ext4 /dev/block/by-name/logs /logs nosuid nodev barrier=1,data=ordered
 
     start watchdogd
 
@@ -407,14 +389,6 @@ service iprenew_eth0 /system/bin/dhcpcd -n
     class main
     disabled
     oneshot
-
-# From init.rc in stock, these redefine service definitions
-service keystore /system/bin/keystore /data/misc/keystore
-    class main
-    user keystore
-    group keystore drmrpc readproc
-    writepid /dev/cpuset/foreground/tasks
-    setenv LD_SHIM_LIBS "/system/lib/libbinder.so|libstock_crypto.so:/system/lib/hw/keystore.vendor.clovertrail.so|libstock_crypto.so"
 
 # Workaround for broken incall audio
 service bootsnd /system/bin/tinyplay /system/etc/silence.wav -D 0 -d 0 -p 880
