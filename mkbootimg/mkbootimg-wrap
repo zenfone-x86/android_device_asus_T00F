@@ -1,0 +1,46 @@
+#!/bin/bash
+# Smart wrapper: detects whether called with standard mkbootimg args (--flag style)
+# or pack_intel positional args, and dispatches accordingly.
+
+# If first arg starts with --, it's standard mkbootimg style → translate to pack_intel
+# Otherwise, it's already pack_intel positional style → pass through
+
+if [[ "$1" == --* ]]; then
+    KERNEL=""
+    RAMDISK=""
+    OUTPUT=""
+    CMDLINE=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --kernel) KERNEL="$2"; shift 2 ;;
+            --ramdisk) RAMDISK="$2"; shift 2 ;;
+            --output) OUTPUT="$2"; shift 2 ;;
+            --cmdline) CMDLINE="$2"; shift 2 ;;
+            --second|--tags-addr|--ramdisk_offset|--dt|--pagesize|--base) shift 2 ;;
+            *) shift ;;
+        esac
+    done
+
+    if [[ -z "$OUTPUT" ]]; then
+        echo "mkbootimg-wrap: error: no output specified" >&2
+        exit 1
+    fi
+
+    if echo "$KERNEL" | grep -qi "recovery"; then
+        BASE_IMG="device/asus/T00F/base_images/recovery.img"
+    else
+        BASE_IMG="device/asus/T00F/base_images/boot.img"
+    fi
+
+    CMDLINE_FILE=$(mktemp)
+    printf '%-1024s' "$CMDLINE" > "$CMDLINE_FILE"
+
+    echo "mkbootimg-wrap: pack_intel $BASE_IMG $KERNEL $RAMDISK <cmdline> $OUTPUT" >&2
+    pack_intel "$BASE_IMG" "$KERNEL" "$RAMDISK" "$CMDLINE_FILE" "$OUTPUT" 2>&1
+    rc=$?
+    rm -f "$CMDLINE_FILE"
+    exit $rc
+else
+    exec pack_intel "$@"
+fi

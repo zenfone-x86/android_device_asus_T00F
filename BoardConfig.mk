@@ -33,7 +33,7 @@ TARGET_SYSTEM_PROP += device/asus/T00F/system.prop
 TARGET_DROIDBOOT_LIBS := libintel_droidboot
 
 # OTA Packaging / Bootimg creation
-BOARD_CUSTOM_MKBOOTIMG := pack_intel
+BOARD_CUSTOM_MKBOOTIMG := device/asus/T00F/mkbootimg/mkbootimg-wrap
 BOARD_CUSTOM_BOOTIMG_MK := device/asus/T00F/mkbootimg.mk
 DEVICE_BASE_BOOT_IMAGE := device/asus/T00F/base_images/boot.img
 DEVICE_BASE_RECOVERY_IMAGE := device/asus/T00F/base_images/recovery.img
