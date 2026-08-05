@@ -184,7 +184,7 @@ BOARD_GLOBAL_CFLAGS += -DNO_SECURE_DISCARD
 TARGET_RELEASETOOL_MAKE_RECOVERY_PATCH_SCRIPT := ./device/asus/T00F/make_recovery_patch
 TARGET_RECOVERY_FSTAB := device/asus/T00F/rootdir/etc/fstab.redhookbay
 TARGET_RECOVERY_DEVICE_MODULES := libinit_ctp librecovery_updater_ctp intel_prop thermald upi_ug31xx
-#TARGET_RECOVERY_UPDATER_LIBS += libosip_updater
+TARGET_RECOVERY_UPDATER_LIBS += libosip_updater
 TARGET_RECOVERY_UPDATER_EXTRA_LIBS += libintel_updater liboempartitioning_static
 
 # SELinux

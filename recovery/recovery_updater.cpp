@@ -33,7 +33,6 @@
 #include "fw_version_check.h"
 #include "edify/expr.h"
 
-#define FORCE_RW_OPT            "0"
 #define BOOT_IFWI_SIZE          0x400000
 #define BOOT_UMIP_SIZE          0x10000
 #define BOOT_UMIP_SECTOR_SIZE   0x200
@@ -59,18 +58,19 @@ static void dump_fw_versions(struct firmware_versions *v)
 	fprintf(stderr, "	    mIA: %04X.%04X\n", v->mia.major, v->mia.minor);
 }
 
-static int force_rw(const char *name) {
+static int set_force_ro(const char *name, bool read_only) {
 	int ret, fd;
+	const char *value = read_only ? "1" : "0";
 
 	fd = open(name, O_WRONLY);
 	if (fd < 0) {
-		fprintf(stderr, "force_ro(): failed to open %s\n", name);
+		fprintf(stderr, "set_force_ro(): failed to open %s\n", name);
 		return fd;
 	}
 
-	ret = write(fd, FORCE_RW_OPT, sizeof(FORCE_RW_OPT));
+	ret = write(fd, value, strlen(value));
 	if (ret <= 0) {
-		fprintf(stderr, "force_ro(): failed to write %s\n", name);
+		fprintf(stderr, "set_force_ro(): failed to write %s\n", name);
 		close(fd);
 		return ret;
 	}
@@ -147,8 +147,9 @@ static void xor_update(char *ptr)
 
 static int write_umip_emmc(uint32_t addr_offset, void *data, size_t size)
 {
-	int boot_fd = 0;
+	int boot_fd = -1;
 	int boot_index;
+	bool boot_partition_writable = false;
 	char boot_partition[FILE_PATH_SIZE];
 	char boot_partition_force_ro[FILE_PATH_SIZE];
 	char *ptr;
@@ -174,10 +175,11 @@ static int write_umip_emmc(uint32_t addr_offset, void *data, size_t size)
 		snprintf(boot_partition, FILE_PATH_SIZE, "/dev/block/mmcblk0boot%d", boot_index);
 		snprintf(boot_partition_force_ro, FILE_PATH_SIZE, "/sys/block/mmcblk0boot%d/force_ro", boot_index);
 
-		if (force_rw(boot_partition_force_ro)) {
+		if (set_force_ro(boot_partition_force_ro, false)) {
 			fprintf(stderr, "write_umip_emmc: unable to force_ro %s\n", boot_partition);
 			goto err_boot1;
 		}
+		boot_partition_writable = true;
 		boot_fd = open(boot_partition, O_RDWR);
 		if (boot_fd < 0) {
 			fprintf(stderr, "write_umip_emmc: failed to open %s\n", boot_partition);
@@ -212,6 +214,13 @@ static int write_umip_emmc(uint32_t addr_offset, void *data, size_t size)
 
 		munmap(ptr, BOOT_IFWI_SIZE);
 		close(boot_fd);
+		boot_fd = -1;
+		if (set_force_ro(boot_partition_force_ro, true)) {
+			fprintf(stderr, "write_umip_emmc: unable to restore read-only mode for %s\n",
+					boot_partition);
+			goto err_boot1;
+		}
+		boot_partition_writable = false;
 	}
 
 	if (addr_offset == IFWI_OFFSET)
@@ -224,27 +233,26 @@ err_boot2:
 err_boot1:
 	if (addr_offset == IFWI_OFFSET)
 		free(token_data);
-	close(boot_fd);
+	if (boot_fd >= 0)
+		close(boot_fd);
+	if (boot_partition_writable)
+		set_force_ro(boot_partition_force_ro, true);
 	return -1;
 }
 
 static int readbyte_umip_emmc(uint32_t addr_offset)
 {
-	int boot_fd = 0;
+	int boot_fd = -1;
 	char *ptr;
 	int value = 0;
 
-	if (force_rw("/sys/block/mmcblk0boot0/force_ro")) {
-		fprintf(stderr, "read_umip_emmc: unable to force_ro\n");
-		goto err_boot1;
-	}
-	boot_fd = open("/dev/block/mmcblk0boot0", O_RDWR);
+	boot_fd = open("/dev/block/mmcblk0boot0", O_RDONLY);
 	if (boot_fd < 0) {
 		fprintf(stderr, "read_umip_emmc: failed to open /dev/block/mmcblk0boot0\n");
 		goto err_boot1;
 	}
 
-	ptr = (char *)mmap(NULL, BOOT_UMIP_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, boot_fd, 0);
+	ptr = (char *)mmap(NULL, BOOT_UMIP_SIZE, PROT_READ, MAP_SHARED, boot_fd, 0);
 	if (ptr == MAP_FAILED) {
 		fprintf(stderr, "read_umip_emmc: mmap failed on boot0 with error : %s\n", strerror(errno));
 		goto err_boot1;
@@ -267,7 +275,8 @@ err_boot2:
 	munmap(ptr, BOOT_UMIP_SIZE);
 
 err_boot1:
-	close(boot_fd);
+	if (boot_fd >= 0)
+		close(boot_fd);
 	return -1;
 }
 
