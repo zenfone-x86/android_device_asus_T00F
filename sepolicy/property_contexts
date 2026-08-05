@@ -13,10 +13,9 @@ persist.hdmi.				u:object_r:hdmi_prop:s0
 persist.ims_support                     u:object_r:asus_prop:s0
 persist.sys.mmgr1.                      u:object_r:radio_prop:s0
 persist.sys.mmgr2.                      u:object_r:radio_prop:s0
-serialno                                u:object_r:asus_prop:s0
 service.amtl1.cfg                       u:object_r:radio_prop:s0
 service.amtl2.cfg                       u:object_r:radio_prop:s0
-swconf.info                             u:object_r:asus_prop:s0
+ro.swconf.info                          u:object_r:asus_prop:s0
 sys.chaabi.version                      u:object_r:asus_prop:s0
 sys.ia32.version                        u:object_r:asus_prop:s0
 sys.supp_ia32.version                   u:object_r:asus_prop:s0

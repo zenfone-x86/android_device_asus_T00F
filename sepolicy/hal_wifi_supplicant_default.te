@@ -1,0 +1,3 @@
+# The Broadcom supplicant reads the factory MAC address from /config.
+allow hal_wifi_supplicant_default config_file:dir search;
+allow hal_wifi_supplicant_default config_file:file r_file_perms;

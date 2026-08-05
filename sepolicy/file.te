@@ -1,6 +1,9 @@
 # Asusconfig
 type config_file, file_type;
 
+# Touch key control exposed by the Synaptics procfs driver.
+type proc_touchscreen, fs_type;
+
 # Bluetooth
 type bluetooth_device, dev_type;
 

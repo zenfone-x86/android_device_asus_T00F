@@ -1,1 +1,2 @@
 #genfscon sepfs / u:object_r:sepfs:s0
+genfscon proc /synaptics_dsx/0dbutton u:object_r:proc_touchscreen:s0
