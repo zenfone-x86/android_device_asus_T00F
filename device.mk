@@ -31,7 +31,8 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # Asus properties
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
-    ro.build.asus.sku=WW
+    ro.build.asus.sku=WW \
+    persist.sys.usb.config=mtp
 
 # Audio
 PRODUCT_PACKAGES += \
