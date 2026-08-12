@@ -10,6 +10,7 @@ LOCAL_SHARED_LIBRARIES := \
     libhardware \
     liblog \
     libcamera_client \
+    libdl \
     libgui \
     libhidltransport \
     libsensor \

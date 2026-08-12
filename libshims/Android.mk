@@ -17,6 +17,7 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
     gui/SensorManager.cpp \
+    gui/SurfaceComposerClient.cpp \
     ui/GraphicBufferAllocator.cpp \
     ui/GraphicBuffer.cpp \
     ui/GraphicBufferMapper.cpp \

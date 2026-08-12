@@ -27,6 +27,8 @@
 #define LOG_TAG "CameraWrapper"
 #include <cutils/log.h>
 
+#include <dlfcn.h>
+
 #include <utils/threads.h>
 #include <utils/String8.h>
 #include <hardware/hardware.h>
@@ -37,6 +39,7 @@
 
 static android::Mutex gCameraWrapperLock;
 static camera_module_t *gVendorModule = 0;
+static void *gCameraShim = NULL;
 
 static char **fixed_set_params = NULL;
 
@@ -96,6 +99,20 @@ static int check_vendor_module()
         return 0;
 
     ALOGI("%s", __FUNCTION__);
+
+    /*
+     * The stock Lollipop camera HAL uses private framework symbols which
+     * moved out of libgui/libui in newer Android releases. Load their
+     * compatibility implementations into the global namespace before
+     * opening the vendor module so its relocations can be resolved.
+     */
+    if (!gCameraShim) {
+        gCameraShim = dlopen("libshim_camera.so", RTLD_NOW | RTLD_GLOBAL);
+        if (!gCameraShim) {
+            ALOGE("failed to load camera compatibility shim: %s", dlerror());
+            return -EINVAL;
+        }
+    }
 
     rv = hw_get_module_by_class("camera", "vendor",
             (const hw_module_t **)&gVendorModule);
@@ -463,7 +480,7 @@ int camera_device_open(const hw_module_t* module, const char* name,
         cameraid = atoi(name);
         num_cameras = gVendorModule->get_number_of_cameras();
 
-        if(cameraid > num_cameras)
+        if (cameraid < 0 || cameraid >= num_cameras)
         {
             ALOGE("camera service provided cameraid out of bounds, "
                     "cameraid = %d, num supported = %d",
