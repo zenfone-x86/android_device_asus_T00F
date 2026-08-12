@@ -454,5 +454,4 @@ lib/hw/sensors.PS_ALS.redhookbay.so
 lib/libcmdthread.so
 
 # for CM13-14, remove it later
-vendor/lib/libstlport.so
-
+lib/libstlport.so
