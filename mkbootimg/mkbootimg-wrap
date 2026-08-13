@@ -33,8 +33,22 @@ if [[ "$1" == --* ]]; then
         BASE_IMG="device/asus/T00F/base_images/boot.img"
     fi
 
+    # add_img_to_target_files appends buildvariant=<variant> to every normal
+    # Android boot cmdline.  T00F's direct bootimage rule intentionally uses
+    # BOARD_KERNEL_CMDLINE alone, so keep the two packaging paths identical.
+    CMDLINE=$(printf '%s' "$CMDLINE" | sed -E \
+        's/(^|[[:space:]])buildvariant=[^[:space:]]+//g; s/[[:space:]]+$//')
+
+    # pack_intel copies exactly 1024 bytes into the Intel header.  Padding
+    # with spaces turns those spaces into kernel command-line data; write the
+    # same newline and NUL padding as the direct mkbootimg.mk rule instead.
+    if (( ${#CMDLINE} >= 1024 )); then
+        echo "mkbootimg-wrap: error: T00F cmdline exceeds 1023 bytes" >&2
+        exit 1
+    fi
     CMDLINE_FILE=$(mktemp)
-    printf '%-1024s' "$CMDLINE" > "$CMDLINE_FILE"
+    printf '%s\n' "$CMDLINE" > "$CMDLINE_FILE"
+    truncate -s 1024 "$CMDLINE_FILE"
 
     echo "mkbootimg-wrap: pack_intel $BASE_IMG $KERNEL $RAMDISK <cmdline> $OUTPUT" >&2
     pack_intel "$BASE_IMG" "$KERNEL" "$RAMDISK" "$CMDLINE_FILE" "$OUTPUT" 2>&1
