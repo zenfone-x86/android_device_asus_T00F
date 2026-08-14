@@ -105,3 +105,4 @@
 /sys/devices/virtual/compass/akm09911 delay_fusion  0664 system system
 /sys/devices/virtual/compass/akm09911 delay_maguc   0664 system system
 /sys/devices/virtual/compass/akm09911 accel         0664 system system
+/dev/kvm                  0666   root       root
