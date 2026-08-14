@@ -61,6 +61,7 @@ TARGET_SYSTEM_PROP += device/asus/T00F/system.prop
 TARGET_DROIDBOOT_LIBS := libintel_droidboot
 
 # OTA Packaging / Bootimg creation
+TARGET_RELEASETOOLS_EXTENSIONS := device/asus/T00F/releasetools
 BOARD_CUSTOM_MKBOOTIMG := device/asus/T00F/mkbootimg/mkbootimg-wrap
 BOARD_CUSTOM_BOOTIMG_MK := device/asus/T00F/mkbootimg.mk
 DEVICE_BASE_BOOT_IMAGE := device/asus/T00F/base_images/boot.img
