@@ -163,8 +163,14 @@ BOARD_GLOBAL_CFLAGS += -DGFX_BUF_EXT
 # Partitions
 TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
+# T00F OSIP recovery slots hold 32,000 sectors.  Omit the optional recovery
+# backup client so the LineageOS 15.1 recovery image stays within that limit.
+TARGET_RECOVERY_NO_BU := true
 BOARD_BOOTIMAGE_PARTITION_SIZE := 16777216
-BOARD_RECOVERYIMAGE_PARTITION_SIZE := 16777216
+# OSIP recovery slots are exactly 32,000 * 512 bytes, not the nominal 16 MiB
+# Android partition size.  Fail the build rather than generating an image the
+# Intel OSIP writer cannot install.
+BOARD_RECOVERYIMAGE_PARTITION_SIZE := 16384000
 BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 5277466624 ##5277483008 - 16384 // 5033MB
 BOARD_CACHEIMAGE_PARTITION_SIZE := 519045120 # // 495MB

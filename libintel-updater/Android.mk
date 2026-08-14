@@ -4,7 +4,10 @@ include $(CLEAR_VARS)
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := libosip_updater
 LOCAL_SRC_FILES := libosip_updater.cpp
-LOCAL_C_INCLUDES += bootable/recovery external/selinux/libselinux/include
+LOCAL_C_INCLUDES += \
+    bootable/recovery \
+    bootable/recovery/updater/include \
+    external/selinux/libselinux/include
 
 include $(BUILD_STATIC_LIBRARY)
 
