@@ -101,13 +101,10 @@ BOARD_CHARGER_ENABLE_SUSPEND := true
 BOARD_HEALTHD_CUSTOM_CHARGER_RES := device/asus/T00F/charger/images
 
 # Dex-preoptimization
-ifeq ($(HOST_OS),linux)
-  ifneq ($(TARGET_BUILD_VARIANT),eng)
-    ifeq ($(WITH_DEXPREOPT),)
-      WITH_DEXPREOPT := true
-      WITH_DEXPREOPT_BOOT_IMG_ONLY := true
-    endif
-  endif
+# The 1.23 GiB system partition needs the space for the Google Apps package.
+# Keep this conditional so a build can opt back in with WITH_DEXPREOPT=true.
+ifeq ($(WITH_DEXPREOPT),)
+  WITH_DEXPREOPT := false
 endif
 
 # Hardware
