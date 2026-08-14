@@ -2,6 +2,9 @@
 TARGET_SCREEN_HEIGHT := 1280
 TARGET_SCREEN_WIDTH := 720
 
+# Build a reduced system image for the constrained T00F system partition.
+T00F_OMIT_OPTIONAL_APPS := true
+
 # Inherit some common CM stuff.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 
