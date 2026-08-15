@@ -24,19 +24,20 @@ BASE_BOOT_IMAGE := $(DEVICE_BASE_BOOT_IMAGE)
 BASE_RECOVERY_IMAGE := $(DEVICE_BASE_RECOVERY_IMAGE)
 
 cmdline := $(PRODUCT_OUT)/cmdline
+intel_mkbootimg := $(HOST_OUT_EXECUTABLES)/pack_intel
 
-$(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTIMG) \
+$(INSTALLED_RECOVERYIMAGE_TARGET): $(intel_mkbootimg) \
 		$(recovery_kernel) \
 		$(recovery_ramdisk)
 	$(call pretty,"Target recovery image: $@")
 	@echo "----- Making recovery osimage ------"${CL_RST}
 	@echo "----- checking cmdline ------"${CL_RST}
 	@echo $(BOARD_KERNEL_CMDLINE) > $(PRODUCT_OUT)/cmdline
-	$(MKBOOTIMG) $(BASE_RECOVERY_IMAGE) $(recovery_kernel) $(recovery_ramdisk) $(cmdline) $@
+	$(intel_mkbootimg) $(BASE_RECOVERY_IMAGE) $(recovery_kernel) $(recovery_ramdisk) $(cmdline) $@
 	@echo "Made recovery image: $@"${CL_RST}
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_RECOVERYIMAGE_PARTITION_SIZE))
 
-$(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTIMG) \
+$(INSTALLED_BOOTIMAGE_TARGET): $(intel_mkbootimg) \
 		$(INSTALLED_KERNEL_TARGET) \
 		$(INSTALLED_RAMDISK_TARGET)
 	$(call pretty,"Target boot image: $@")
@@ -48,6 +49,6 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTIMG) \
 	@echo "----- checking cmdline ------"${CL_RST}
 	@echo $(BOARD_KERNEL_CMDLINE) > $(PRODUCT_OUT)/cmdline
 	@echo "----- Making boot osimage ------"${CL_RST}
-	$(MKBOOTIMG) $(BASE_BOOT_IMAGE) $(INSTALLED_KERNEL_TARGET) $(INSTALLED_RAMDISK_TARGET) $(cmdline) $@
+	$(intel_mkbootimg) $(BASE_BOOT_IMAGE) $(INSTALLED_KERNEL_TARGET) $(INSTALLED_RAMDISK_TARGET) $(cmdline) $@
 	@echo "Made boot image: $@"${CL_RST}
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_BOOTIMAGE_PARTITION_SIZE))
