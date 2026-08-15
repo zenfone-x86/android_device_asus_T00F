@@ -319,3 +319,11 @@
 - **Solution:** Set the product name to ASUS Zenfone.
 - **Affected Files:** `device/asus/T00F/lineage.mk`
 - **Git Hash:** `22f07b9e775d379196d82d05b1f35f6618cbbbe3`
+
+## Modern ARM applications can exceed Houdini v2 symbol resolution
+
+- **Issue:** Some ARMv7 applications, including Microsoft Remote Desktop (`com.microsoft.rdc.androidx`), fail while loading native libraries with unresolved symbols such as `__sF`.
+- **Root Cause:** T00F uses Intel Houdini 6.1.2 for ARMv7-to-x86 32-bit translation.  It implements Native Bridge v2.  The bundled guest libc can be loaded, but Houdini v2 still fails to resolve some modern application's versioned/data symbols; framework linker namespaces cannot correct this because they require Native Bridge v3.
+- **Solution:** There is currently no complete software-side fix.  A compatible ARMv7-to-x86 32-bit Native Bridge v3 Houdini (`houdini8_x`) would be required to provide namespace-aware loading, but Intel did not provide that Oreo x86 variant.  Do not paper over individual unresolved symbols: it can make other translated applications fail at a later dependency.
+- **Affected Files:** `system/core/libnativebridge/native_bridge.cc`, `system/core/libnativeloader/native_loader.cpp`, `bionic/libdl/libdl.c`
+- **Status:** Unresolved; retain only the verified Native Bridge v2 compatibility and Houdini host-load fixes.
