@@ -15,6 +15,8 @@
  */
 
 #include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -32,6 +34,7 @@
 #define POWERSAVE_MAX_FREQ 933000
 #define BIAS_PERF_MIN_FREQ 1333000
 #define NORMAL_MAX_FREQ 1600000
+#define SCREEN_OFF_TARGET_MAX_FREQ 933000
 
 static pthread_mutex_t profile_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -45,6 +48,7 @@ enum {
 };
 
 static int current_power_profile = PROFILE_BALANCED;
+static bool interactive = true;
 
 static char *cpu_path_min[] = {
     (char *)"/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq",
@@ -59,6 +63,9 @@ static char *cpu_path_max[] = {
     (char *)"/sys/devices/system/cpu/cpu2/cpufreq/scaling_max_freq",
     (char *)"/sys/devices/system/cpu/cpu3/cpufreq/scaling_max_freq",
 };
+
+#define CPU0_AVAILABLE_FREQS \
+    "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies"
 
 struct local_power_module {
     struct power_module base;
@@ -108,9 +115,6 @@ static void sysfs_write(const char *path, const char *const s) {
     close(fd);
 }
 
-static void power_set_interactive(struct power_module *, int on __unused) {
-}
-
 static void sysfs_write_int(char *path, int value)
 {
     char buf[80];
@@ -128,51 +132,126 @@ static void set_max_freq(int freq) {
         sysfs_write_int(cpu_path_max[cpu], freq);
 }
 
+/*
+ * The available OPPs are supplied by SFI and differ between the Z2560 and
+ * Z2580.  Do not hard-code a frequency that may not exist on one variant.
+ */
+static bool get_screen_off_limits(int *min_freq, int *max_freq)
+{
+    char buf[BUF_SIZE];
+    char *save_ptr = NULL;
+    char *token;
+    int lowest_freq = INT_MAX;
+    int capped_freq = 0;
+
+    if (sysfs_read(CPU0_AVAILABLE_FREQS, buf) < 0)
+        return false;
+
+    for (token = strtok_r(buf, " \n", &save_ptr); token != NULL;
+            token = strtok_r(NULL, " \n", &save_ptr)) {
+        char *end_ptr = NULL;
+        long freq = strtol(token, &end_ptr, 10);
+
+        if (*token == '\0' || *end_ptr != '\0' || freq <= 0 || freq > INT_MAX)
+            continue;
+
+        if (freq < lowest_freq)
+            lowest_freq = freq;
+        if (freq <= SCREEN_OFF_TARGET_MAX_FREQ && freq > capped_freq)
+            capped_freq = freq;
+    }
+
+    if (lowest_freq == INT_MAX)
+        return false;
+
+    *min_freq = lowest_freq;
+    *max_freq = capped_freq ? capped_freq : lowest_freq;
+    return true;
+}
+
+static void get_profile_limits(int profile, int *min_freq, int *max_freq)
+{
+    *min_freq = POWERSAVE_MIN_FREQ;
+    *max_freq = NORMAL_MAX_FREQ;
+
+    switch (profile) {
+    case PROFILE_HIGH_PERFORMANCE:
+        *min_freq = NORMAL_MAX_FREQ;
+        *max_freq = NORMAL_MAX_FREQ;
+        break;
+    case PROFILE_BIAS_PERFORMANCE:
+        *min_freq = BIAS_PERF_MIN_FREQ;
+        *max_freq = NORMAL_MAX_FREQ;
+        break;
+    case PROFILE_BIAS_POWER:
+    case PROFILE_POWER_SAVE:
+        *max_freq = POWERSAVE_MAX_FREQ;
+        break;
+    default:
+        break;
+    }
+}
+
+static void apply_power_profile(void)
+{
+    int min_freq;
+    int max_freq;
+
+    get_profile_limits(current_power_profile, &min_freq, &max_freq);
+
+    if (!interactive && !get_screen_off_limits(&min_freq, &max_freq))
+        ALOGW("Unable to determine available CPU frequencies; leaving profile limits unchanged");
+
+    if (min_freq > max_freq)
+        min_freq = max_freq;
+
+    /* Lower the minimum before capping; raise the cap before restoring it. */
+    if (interactive) {
+        set_max_freq(max_freq);
+        set_min_freq(min_freq);
+    } else {
+        set_min_freq(min_freq);
+        set_max_freq(max_freq);
+    }
+
+    ALOGD("%s: profile=%d interactive=%d min=%d max=%d", __func__,
+            current_power_profile, interactive, min_freq, max_freq);
+}
+
+static void power_set_interactive(struct power_module *, int on)
+{
+    pthread_mutex_lock(&profile_lock);
+    interactive = on != 0;
+    apply_power_profile();
+    pthread_mutex_unlock(&profile_lock);
+}
+
 static void power_init(struct power_module *) {
 
 }
 
 static void set_power_profile(int profile) {
-    int min_freq = POWERSAVE_MIN_FREQ;
-    int max_freq = NORMAL_MAX_FREQ;
-
-    ALOGV("%s: profile=%d", __func__, profile);
-
-    switch (profile) {
-    case PROFILE_HIGH_PERFORMANCE:
-        min_freq = NORMAL_MAX_FREQ;
-        max_freq = NORMAL_MAX_FREQ;
-        break;
-    case PROFILE_BIAS_PERFORMANCE:
-        min_freq = BIAS_PERF_MIN_FREQ;
-        max_freq = NORMAL_MAX_FREQ;
-        break;
-    case PROFILE_BIAS_POWER:
-        min_freq = POWERSAVE_MIN_FREQ;
-        max_freq = POWERSAVE_MAX_FREQ;
-        break;
-    case PROFILE_POWER_SAVE:
-        min_freq = POWERSAVE_MIN_FREQ;
-        max_freq = POWERSAVE_MAX_FREQ;
-        break;
-    default:
-        break;
+    if (profile < PROFILE_POWER_SAVE || profile >= PROFILE_MAX) {
+        ALOGE("%s: invalid profile %d", __func__, profile);
+        return;
     }
 
-    set_min_freq(min_freq);
-    set_max_freq(max_freq);
-
     current_power_profile = profile;
-
-    ALOGD("%s: set power profile mode: %d", __func__, current_power_profile);
+    apply_power_profile();
 }
 
 static void power_hint( __attribute__((unused)) struct power_module *module,
                       power_hint_t hint, void *data)
 {
     if (hint == POWER_HINT_SET_PROFILE) {
+        /*
+         * The HIDL 1.0 compatibility wrapper represents an integer hint value
+         * of zero as NULL.  PROFILE_POWER_SAVE is zero, so NULL is valid here.
+         */
+        int profile = data ? *(int32_t *)data : PROFILE_POWER_SAVE;
+
         pthread_mutex_lock(&profile_lock);
-        set_power_profile(*(int32_t *)data);
+        set_power_profile(profile);
         pthread_mutex_unlock(&profile_lock);
         return;
     }
