@@ -5,6 +5,11 @@ TARGET_SCREEN_WIDTH := 720
 # Build a reduced system image for the constrained T00F system partition.
 T00F_OMIT_OPTIONAL_APPS := true
 
+# This must precede full_base_telephony.mk: property generation retains the
+# first value, while runtime_libart.mk (inherited by full_base) defaults this
+# property to 0.  CM14.1 used ADDITIONAL_DEFAULT_PROPERTIES for the same goal.
+PRODUCT_SYSTEM_DEFAULT_PROPERTIES += ro.dalvik.vm.native.bridge=libhoudini.so
+
 # Inherit some common CM stuff.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 

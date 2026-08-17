@@ -132,8 +132,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.enable.native.bridge.exec=1
 
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.dalvik.vm.native.bridge=libhoudini.so
-
 # Key layout files
 PRODUCT_COPY_FILES += \
     device/asus/T00F/keylayout/synaptics_dsx.idc:system/usr/idc/$(BOARD_TOUCHSCREEN_DRIVER).idc \
