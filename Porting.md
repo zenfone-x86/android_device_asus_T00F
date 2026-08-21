@@ -237,8 +237,8 @@
 - **Issue:** An ARM `libstlport.so` conflicted with the x86 userspace build.
 - **Root Cause:** The proprietary-file list and vendor tree retained the ARM copy instead of the x86 library path.
 - **Solution:** Correct the x86 proprietary path and remove the ARM vendor blob.
-- **Affected Files:** `device/asus/T00F/proprietary-files.txt`, `vendor/asus/T00F/T00F/proprietary/vendor/lib/libstlport.so`
-- **Git Hash:** `device/asus/T00F/19a32205df9faa58ae90355879c63c407e96c88b`, `vendor/asus/T00F/2e6e94021c1be79532de37f6a167466a41791261`
+- **Affected Files:** `device/asus/T00F/proprietary-files.txt`, `vendor/asus/T00F/T00F-vendor-blobs.mk`, `vendor/asus/T00F/proprietary/lib/libstlport.so`, `vendor/asus/T00F/proprietary/vendor/lib/libstlport.so`
+- **Git Hash:** `device/asus/T00F/19a32205df9faa58ae90355879c63c407e96c88b`, `vendor/asus/T00F/3d2b2d08390d675f0caa900d20d6c42c80ec5a15`
 
 ## Legacy Intel audio HAL was incompatible with Oreo tinyalsa
 
@@ -246,7 +246,7 @@
 - **Root Cause:** Oreo's Soong tinyalsa build changed the `pcm_config` layout, stopped using the T00F kernel UAPI headers, and no longer validated mixer values as the CM14 implementation did.
 - **Solution:** Restore the legacy `pcm_config` ABI, compile against the generated T00F kernel headers, zero the unsupported silence field, and reject out-of-range mixer values.
 - **Affected Files:** `external/tinyalsa/Android.bp`, `external/tinyalsa/include/tinyalsa/asoundlib.h`, `external/tinyalsa/mixer.c`, `external/tinyalsa/pcm.c`
-- **Git Hash:** `external/tinyalsa/351a87d0ae86c8f18bc781d6cbe86b5a7daa1454`
+- **Git Hash:** `external/tinyalsa/8fb5e9c067861cf416ace3646c2df46d17c6929e`
 
 ## PVR hardware bitmap upload corruption
 
@@ -328,6 +328,33 @@
 - **Affected Files:** `system/core/libnativebridge/native_bridge.cc`, `system/core/libnativeloader/native_loader.cpp`, `bionic/libdl/libdl.c`
 - **Status:** Unresolved; retain only the verified Native Bridge v2 compatibility and Houdini host-load fixes.
 
+## Audio PFW configuration was selected from product branding
+
+- **Issue:** A full LineageOS 15.1 install could remain at boot animation and never reach the desktop.
+- **Root Cause:** The proprietary audio route manager reads `AudioComms.PFW.ConfName`.  Its legacy fallback identifies T00F variants from `ro.product.model`, but the product branding was changed from `ASUS_T00F` to `ASUS Zenfone`; the service consequently requested the absent generic `ParameterFrameworkConfiguration.xml`.  The primary audio HAL then failed to initialize, crashed `audioserver`, and blocked `AudioService`.  The HAL also requires the `mmgr` service socket during startup.
+- **Solution:** During the existing `on fs` configuration stage, map the hardware project ID to the matching A500CG, A502CG, or A600CG Parameter Framework XML and set `AudioComms.PFW.ConfName` explicitly.  Re-enable `init.modem.rc` so `mmgr` is available before audio initialization.
+- **Affected Files:** `device/asus/T00F/rootdir/etc/config_init.sh`, `device/asus/T00F/rootdir/etc/init.redhookbay.rc`
+- **Verification:** `config_init.sh` passes shell syntax validation.  The fix targets the property and configuration path reported by the failing `audioserver` log; device boot verification remains pending.
+- **Git Hash:** `device/asus/T00F/88428ed`
+
+## Screen-off CPU policy and Battery Saver stability
+
+- **Issue:** The device consumed excessive power while the display was off, and enabling Battery Saver could crash the Power HAL instead of applying its CPU limit.
+- **Root Cause:** The legacy Power HAL ignored `setInteractive()`.  Its profile handler also dereferenced its data pointer unconditionally, although the Oreo HIDL compatibility wrapper represents the power-save profile ID (`0`) as `NULL`.  Wi-Fi supplicant additionally ran with its persistent debug flag enabled.
+- **Solution:** Apply a display-off CPU policy using the actual SFI-advertised frequencies, capped at the highest valid OPP no greater than 933 MHz and restored on display-on.  Interpret a null profile argument as the valid power-save profile, validate profile IDs, and remove `wpa_supplicant -d`.
+- **Affected Files:** `device/asus/T00F/power/power.cpp`, `device/asus/T00F/rootdir/etc/init.wifi.vendor.rc`
+- **Verification:** On Z2580, screen-off reports `800000`/`933000` kHz and unlock restores `800000`/`1600000` kHz.  The running supplicant command line no longer contains `-d`, and Battery Saver applies the 933 MHz cap without a Power HAL crash.
+- **Git Hash:** `device/asus/T00F/f2fa2ae`
+
+## Early-suspend wake lock prevented deep sleep
+
+- **Issue:** After a brief screen-on event, the device could remain almost continuously awake with the screen off, causing excessive standby drain.
+- **Root Cause:** The legacy early-suspend state machine held `early_suspend` while late-resume handlers ran, but did not reliably acquire/release that wake lock around every transition.  A later screen-off transition could leave it active indefinitely and block suspend.
+- **Solution:** Hold `early_suspend` while early-suspend handlers run, release it once they complete, and release it after late-resume completes unless a new suspend request has raced in.
+- **Affected Files:** `kernel/asus/T00F/kernel/power/earlysuspend.c`
+- **Verification:** With Wi-Fi disabled and the display off for 2 h 20 m, battery uptime was 12 m 36 s (8.9% of screen-off realtime).  The `early_suspend` kernel wake lock was 1.148 s, compared with about 33 minutes before the fix.
+- **Git Hash:** `kernel/asus/T00F/afff2ba478f63206c5ef29c3dcfe5aed8d8ecfbb` (CM15.1), `kernel/asus/T00F/968a09d73da25145769d6e9ca4c4613f7d3d664c` (CM14.1)
+
 ## Software HEVC decoder crashed during codec discovery
 
 - **Issue:** Enabling the Google low-end software codec list made `media.codec` crash during boot, which in turn caused SystemUI/Desktop to restart repeatedly.
@@ -336,3 +363,12 @@
 - **Affected Files:** `device/asus/T00F/media/media_codecs.xml`, `external/libhevc/Android.bp`, `external/libhevc/decoder/x86/ihevcd_function_selector.c`
 - **Verification:** Rebuilt `libstagefright_soft_hevcdec.so` has no SSE4.2 selector symbols and selects `ARCH_X86_SSSE3`; after installing that library, the device boots with the Google VP8/VP9/HEVC/H.263 codec declarations enabled.
 - **Git Hash:** `device/asus/T00F/0a46f17d529263eb39e866d36ee9e7f1af32f5ee`, `external/libhevc/2ada391f9896f688c439e5982689f12afa5d4ade`
+
+## Battery LED and offline charging display were incomplete
+
+- **Issue:** The indicator LED did not light while Android was charging, and offline charging showed only static battery images while leaving the panel backlight on.
+- **Root Cause:** The Light 2.0 service and its device manifest entry were not packaged.  The old CM14 resource-overlay location was ignored by LineageOS 15.1, so the platform advertised no battery-LED capability.  In offline charging, the default frame ranges selected only the level-matching static frame and framebuffer blanking did not power down the legacy PSB panel backlight.
+- **Solution:** Package and declare the Light 2.0 HAL, move the LED capability overlay to the Lineage SDK resource path, and advertise RGB battery LED support.  Install a six-frame charger animation descriptor and use a board-specific charger backlight callback to explicitly enable and disable `psb-bl`.
+- **Affected Files:** `device/asus/T00F/device.mk`, `device/asus/T00F/manifest.xml`, `device/asus/T00F/overlay/lineage-sdk/lineage/res/res/values/config.xml`, `device/asus/T00F/rootdir/Android.mk`, `device/asus/T00F/rootdir/etc/charger/animation.txt`, `device/asus/T00F/libhealthd/healthd_board_clovertrail.cpp`, `system/core/healthd/include/healthd/healthd.h`, `system/core/healthd/healthd_common.cpp`, `system/core/healthd/healthd_mode_charger.cpp`
+- **Verification:** Offline charging plays all six frames, then turns the display off.  Android charging shows the battery LED after updating `org.lineageos.platform-res.apk` and rebooting.
+- **Git Hash:** `device/asus/T00F/980814e2b215c875a3dfba927e8d62980344742b`, `system/core/025f14c79e7d1d346d7b563109d7e08bb5f5954a`
