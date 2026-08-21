@@ -18,11 +18,30 @@
 #include <healthd/healthd.h>
 #include <cutils/properties.h>
 
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+
 #define SHUTDOWN_PROP "init.shutdown_to_charging"
 static bool charger_is_connected = false;
 
-void healthd_board_init(struct healthd_config *)
+static void healthd_board_mode_charger_set_backlight(bool enabled)
 {
+    static constexpr char kBacklightPath[] =
+            "/sys/class/backlight/psb-bl/brightness";
+    const char* brightness = enabled ? "50\n" : "0\n";
+    int fd = open(kBacklightPath, O_WRONLY | O_CLOEXEC);
+
+    if (fd < 0)
+        return;
+
+    TEMP_FAILURE_RETRY(write(fd, brightness, strlen(brightness)));
+    close(fd);
+}
+
+void healthd_board_init(struct healthd_config *config)
+{
+    config->charger_set_backlight = healthd_board_mode_charger_set_backlight;
 }
 
 void healthd_board_mode_charger_draw_battery(struct android::BatteryProperties *)
@@ -42,10 +61,6 @@ int healthd_board_battery_update(struct android::BatteryProperties *props)
 }
 
 void healthd_board_mode_charger_battery_update(struct android::BatteryProperties *)
-{
-}
-
-void healthd_board_mode_charger_set_backlight(bool)
 {
 }
 

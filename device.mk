@@ -158,6 +158,7 @@ PRODUCT_PACKAGES += \
 # Lights
 PRODUCT_PACKAGES += \
     android.hardware.light@2.0-impl \
+    android.hardware.light@2.0-service \
     lights.clovertrail
 
 # Media
@@ -235,6 +236,7 @@ PRODUCT_PACKAGES += \
     config_init.sh \
     fstab.redhookbay \
     init.avc.rc \
+    charger_animation \
     init.bt.rc \
     init.bt.vendor.rc \
     init.class_main.sh \

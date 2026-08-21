@@ -1,0 +1,10 @@
+# T00F charger animation: play every frame, then turn the panel off.
+# The battery_scale asset contains six interlaced PNG frames.
+animation: 1 2 charger/battery_scale
+fail: charger/battery_fail
+frame: 750 0 100
+frame: 750 0 100
+frame: 750 0 100
+frame: 750 0 100
+frame: 750 0 100
+frame: 750 0 100
