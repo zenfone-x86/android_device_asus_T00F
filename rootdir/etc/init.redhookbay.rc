@@ -8,7 +8,7 @@ import init.platform.usb.rc
 import init.gps.rc
 import init.compass.rc
 import init.bt.rc
-#import init.modem.rc
+import init.modem.rc
 import init.config_init.rc
 import init.logtool.rc
 

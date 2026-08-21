@@ -49,6 +49,20 @@ else
         echo "DSDS" > /config/local_config
 fi
 
+# The audio route manager uses this property to select its PFW configuration.
+# Do not infer the model from ro.product.model: product branding may change.
+case "$PROJID_DETECT" in
+    0|1|2|3|4)
+        setprop AudioComms.PFW.ConfName ParameterFrameworkConfiguration_a500cg.xml
+        ;;
+    5|7)
+        setprop AudioComms.PFW.ConfName ParameterFrameworkConfiguration_a600cg.xml
+        ;;
+    6)
+        setprop AudioComms.PFW.ConfName ParameterFrameworkConfiguration_a502cg.xml
+        ;;
+esac
+
 CONFIG_PATH=/local_cfg
 PROPS_FILE=init.props
 
